@@ -18,30 +18,30 @@ class userController extends BaseController
     }
 
     public function index()
-    {
-        // Ambil keyword dan pengaturan pengurutan dari request GET
-        $keyword = $this->request->getGet('keyword');
-        $orderBy = $this->request->getGet('orderBy') ?? 'id'; // Default kolom ID
-        $orderDir = $this->request->getGet('orderDir') ?? 'ASC'; // Default ASC
+{
+    $keyword = $this->request->getGet('keyword');
+    $orderBy = $this->request->getGet('orderBy') ?? 'id';
+    $orderDir = $this->request->getGet('orderDir') ?? 'ASC';
 
-        // Pencarian dan pengurutan
-        if ($keyword) {
-            $subscriptions = $this->pendaftaranModel->searchWithOrder($keyword, $orderBy, $orderDir);
-        } else {
-            $subscriptions = $this->pendaftaranModel->orderBy($orderBy, $orderDir)->findAll();
-        }
-
-        $data = [
-            'subscriptions' => $subscriptions,
-            'keyword' => $keyword,
-            'orderBy' => $orderBy,
-            'orderDir' => $orderDir,
-        ];
-
-        return view('v_user', $data);
+    if ($keyword) {
+        $subscriptions = $this->pendaftaranModel->searchWithOrder($keyword, $orderBy, $orderDir);
+    } else {
+        $subscriptions = $this->pendaftaranModel->orderBy($orderBy, $orderDir)->findAll();
     }
 
+    if ($this->request->isAJAX()) {
+        return $this->response->setJSON($subscriptions);
+    }
 
+    $data = [
+        'subscriptions' => $subscriptions,
+        'keyword' => $keyword,
+        'orderBy' => $orderBy,
+        'orderDir' => $orderDir,
+    ];
+
+    return view('v_user', $data);
+}
 
     public function import()
     {
@@ -152,66 +152,108 @@ class userController extends BaseController
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment;filename="' . $filename . '"');
     header('Cache-Control: max-age=0');
-
     // Save the file and output
     $writer->save('php://output');
 }
-
-    
-    
     
     // Tambah atau Update data
     public function tambah()
     {
-        $id = $this->request->getPost('id'); // Ambil ID dari form (jika ada)
-
-        $data = [
+        // Validasi input
+        if (!$this->validate([
+            'username' => 'required',
+            'password' => 'required',
+            'nama_lengkap' => 'required',
+            'paket_select' => 'required',
+        ])) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Input tidak valid.'
+            ]);
+        }
+    
+        $id = $this->request->getPost('id');
+        $subscriptionData = [
             'username' => $this->request->getPost('username'),
-            'password' => $this->request->getPost('password'),
+            'password' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
             'nama_lengkap' => $this->request->getPost('nama_lengkap'),
-            'status' => $this->request->getPost('status'), // Menyimpan status
+            'status' => $this->request->getPost('status'),
             'paket_select' => $this->request->getPost('paket_select'),
-            'paket_detail' => implode(", ", $this->request->getPost('paket_detail') ?? [])
+            'paket_detail' => implode(', ', $this->request->getPost('paket_detail') ?? []),
         ];
-
-        if (!empty($id) && $this->pendaftaranModel->find($id)) {
-            // Jika ID ada dan valid, lakukan Update
-            $this->pendaftaranModel->update($id, $data);
-            return redirect()->to('/userController')->with('success', 'Data berhasil diperbarui!');
+    
+        if ($id) {
+            // Update existing record
+            $this->pendaftaranModel->update($id, $subscriptionData);
+            $message = 'Data berhasil diperbarui.';
         } else {
-            // Jika ID kosong atau tidak valid, Tambah data baru
-            $this->pendaftaranModel->insert($data);
-            return redirect()->to('/userController')->with('success', 'Data berhasil ditambahkan!');
+            // Insert new record
+            $this->pendaftaranModel->insert($subscriptionData);
+            $message = 'Data berhasil disimpan.';
         }
+    
+        $newSubscription = $this->pendaftaranModel->find($id ? $id : $this->pendaftaranModel->getInsertID());
+    
+        // Return JSON
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => $message,
+            'subscription' => $newSubscription,
+        ]);
     }
 
-    // Edit data
-    public function edit($id)
-    {
-        $subscription = $this->pendaftaranModel->find($id);
+
+
     
-        if (!$subscription) {
-            return redirect()->to('/userController')->with('error', 'Data tidak ditemukan!');
-        }
-    
-        $data = [
-            'username' => $subscription['username'],
-            'password' => $subscription['password'],
-            'nama_lengkap' => $subscription['nama_lengkap'],
-            'status' => $subscription['status'], // Ambil data status
-            'paket_select' => $subscription['paket_select'],
-            'paket_detail' => explode(", ", $subscription['paket_detail']), // Ubah string ke array
-            'id' => $subscription['id'], // Kirimkan ID
-            'subscriptions' => $this->pendaftaranModel->findAll()
-        ];
-    
-        return view('v_user', $data);
+public function edit($id)
+{
+    $subscription = $this->pendaftaranModel->find($id);
+
+    if (!$subscription) {
+        return $this->response->setJSON(['success' => false, 'message' => 'Data tidak ditemukan!']);
     }
+
+    return $this->response->setJSON(['success' => true, 'data' => $subscription]);
+}
+
+
+
 
     // Hapus data
     public function delete($id)
     {
-        $this->pendaftaranModel->delete($id);
-        return redirect()->to('/userController')->with('success', 'Data berhasil dihapus!');
+        if (!$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'ID tidak valid.']);
+        }
+    
+        $deleted = $this->pendaftaranModel->delete($id);
+    
+        if ($deleted) {
+            return $this->response->setJSON(['success' => true]);
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus data.']);
+        }
     }
-}
+
+    public function search(){
+        $keyword = $this->request->getGet(('keyword'));
+        $subscriptions = $this->pendaftaranModel->like('username', $keyword)
+        ->orLike('nama_lengkap', $keyword)
+        ->orLike('stauts', $keyword)
+        ->orLike('paket_detail', $keyword)
+        ->findAll();
+
+        return $this->response->setJSON(['subscriptions' => $subscriptions]);
+    }
+
+    }
+    
+
+
+
+
+
+
+
+    
+

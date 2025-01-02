@@ -13,5 +13,6 @@ $routes->get('/userController/delete/(:num)', 'UserController::delete/$1');
 $routes->get('userController/export', 'userController::export');
 $routes->post('/userController/import', 'UserController::import');
 $routes->post('/userController/delete/(:num)', 'UserController::delete/$1');
+$routes->get('/userController/getData', 'UserController::getData');
 
 

@@ -6,14 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="<?= base_url('css/styles.css') ?>">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <title>Form Pendaftaran MyInternet</title>
 
 
     <style>
         body {
             background-color: #f9f9fa;
-            margin: 2rem;
         }
 
 
@@ -28,7 +27,7 @@
         }
 
         .modal-footer {
-            backgoround-color: #f1f1f1;
+            background-color: #f1f1f1;
         }
 
         .form-check-label {
@@ -49,23 +48,48 @@
             margin-top: 20px;
         }
 
-        .btn-primary, .btn-warning{
+        .btn-primary,
+        .btn-warning {
             margin-right: 10px;
         }
+
         .btn-close {
             background-color: white;
         }
 
+        #dataTittle {
+            text-transform: uppercase;
+            font-weight: bold;
+            font: bold;
+            font-size: 2rem;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+       
 
     </style>
 
 
 
 </head>
-
-
 <body>
 
+        <?= $this->include('template/navbar') ?>
+
+        <div class="card-header" style="width: 40rem; height:auto;">
+            <form id="searchForm" autocomplete="off">
+                <div class="input-group">
+                    <input
+                        type="text"
+                        name="keyword"
+                        class="form-control"
+                        style="width:155pt;"
+                        placeholder="Search Here"
+                        value="">
+                </div>
+            </form>
+        </div>
+    </nav>
 
 
     <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalLabel" aria-hidden="true">
@@ -165,56 +189,58 @@
     </div>
 
 
-    <!-- Menampilkan Data Langganan -->
-    <div class="card-header mt-5">
-    <form id="searchForm" autocomplete="off">
-        <div class="input-group">
-            <input
-                type="text"
-                name="keyword"
-                class="form-control"
-                style="width:155pt;"
-                placeholder="Search Here"
-                value="">
-        </div>
-    </form>
-</div>
 
-
-
-    <h3>Daftar Pelanggan</h3>
-    <div class="mt-3">
-        <a href="<?= base_url('userController/export') ?>" class="btn btn-success">Export to Excel</a>
-        <button class="btn btn-primary" id="openModalButton">Daftar</button>
-        <button class="btn btn-warning" id="truncateButton">Truncate Table</button>
-
+    <div class="data-tittle">
+        <h1 class="text-center mt-2" id="dataTittle">Data Pelanggan</h1>
     </div>
-
-    <div class="mt-3">
-        <form action="<?= base_url('userController/import') ?>" method="POST" enctype="multipart/form-data">
-            <div class="input-group">
-                <input type="file" name="file" class="form-control" accept=".xlsx, .xls" required>
-                <button type="submit" class="btn btn-primary">Import from Excel</button>
-            </div>
-        </form>
-    </div>
-
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Username</th>
-                <th>Nama Lengkap</th>
-                <th>Status</th>
-                <th>Detail Paket</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-
-        </tbody>
-    </table>
    
+ <div class="container mt-5">
+        <div class="d-flex justify-content-between mb-3">
+            <div>
+                <button class="btn btn-primary" id="openModalButton"><i class="bx bx-plus-circle margin-r-2"></i> 
+                <span class="fw-normal fs-7">Daftar</span>
+            </button>
+                <form id="logoutForm" action="<?= base_url('logout') ?>" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" id="logoutButton">
+                    <i class='bx bx-exit'></i>
+                    <span class="fw-normal fs-7">Logout</span>
+                </button>
+                </form>
+            </div>
+            <a href="<?= base_url('userController/export') ?>" class="btn btn-success">
+            <i class='bx bx-download'></i>
+            <span class="fw-normal fs-7">Export to Excel</span>
+            </a>
+        </div>
+
+        <div class="mt-3">
+            <form action="<?= base_url('userController/import') ?>" method="POST" enctype="multipart/form-data">
+                <div class="input-group">
+                    <input type="file" name="file" class="form-control" accept=".xlsx, .xls" required>
+                    <button type="submit" class="btn btn-primary">
+                    <i class='bx bxs-folder-open'></i>
+                    <span class="fw-normal fs-7">Import from Excel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Nama Lengkap</th>
+                    <th>Status</th>
+                    <th>Detail Paket</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+
+            </tbody>
+        </table>
+
 
 </body>
 
@@ -223,6 +249,12 @@
 
 
 <script>
+
+
+
+
+
+
     $(document).ready(function() {
         // Load table data on page load
         loadTable();
@@ -302,27 +334,14 @@
             myModal.show();
         });
 
-        $('#truncateButton').on('click', function() {
-            if (confirm('Are you sure you want to truncate the table? This action cannot be undone.')) {
-                $.ajax({
-                    url: '<?= base_url('userController/truncate') ?>',
-                    type: 'POST',
-                    dataType: 'json',
-                    success: function(response) {
-                        console.log('AJAX response:', response); // Debug log
-                        if (response.success) {
-                            alert(response.message);
-                            loadTable(); // Reload the table data
-                        } else {
-                            alert('Failed to truncate table.');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('AJAX error:', status, error); // Debug log
-                    }
-                });
-            }
-        });
+        
+        $('#logoutButton').on('click', function(e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to logout?')) {
+                    $('#logoutForm').submit();
+                }
+            });
+
 
         // Add event listener to search input
         $('input[name="keyword"]').on('input', function() {
@@ -358,7 +377,9 @@
         $.ajax({
             url: '<?= base_url('userController/getData') ?>',
             type: 'GET',
-            data: { keyword: keyword },
+            data: {
+                keyword: keyword
+            },
             dataType: 'json',
             success: function(response) {
                 var tableBody = $('table tbody');
@@ -373,8 +394,10 @@
                             <td>${subscription.status}</td>
                             <td>${subscription.paket_detail}</td>
                             <td>
-                                <button class="btn btn-warning edit-btn" data-id="${subscription.id}">Edit</button>
-                                <button class="btn btn-danger btn-sm delete-btn" data-id="${subscription.id}">Delete</button>
+                                <button class="btn btn-warning edit-btn" data-id="${subscription.id}"><i class='bx bx-edit' ></i> 
+                                Edit
+                                </button>
+                                <button class="btn btn-danger delete-btn" data-id="${subscription.id}"><i class='bx bx-trash' ></i> Delete</button>
                             </td>
                         </tr>
                     `;
@@ -407,4 +430,5 @@
         }
     }
 </script>
+
 </html>

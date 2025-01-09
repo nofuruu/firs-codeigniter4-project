@@ -17,6 +17,8 @@ class userController extends BaseController
         $this->pendaftaranModel = new pendaftaranModel();
     }
 
+    
+
     public function index()
     {
         $keyword = $this->request->getGet('keyword');

@@ -78,9 +78,10 @@
                     </a>
 
                     <form id="logoutForm" action="<?= base_url('logout') ?>" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-danger" id="logoutButton">
+                        <button type="button" class="btn btn-danger" id="logoutButton">
                             <i class='bx bx-exit'></i>
-                            <span class="fw-normal fs-7">Logout</button>
+                            <span class="fw-normal fs-7">Logout</span>
+                        </button>
                     </form>
                 </div>
             </div>
@@ -127,6 +128,8 @@
         $('#form-id').val(''); // Clear the form ID
         $('#form-username').val(''); // Clear the username field
         $('#form-password').val(''); // Clear the password field
+        $('#formModalUser').text('Add User'); // Set modal title to Add User
+        $('#registerUser').attr('data-mode', 'add'); // Set form mode to add
         modalUser.show();
     });
 </script>
@@ -136,17 +139,17 @@
     $(document).ready(function() {
         loadTable();
 
-        function loadTable(keyword = '') {
+        function loadTable(keyword = '', orderBy = 'userid', orderDir = 'ASC') {
             $.ajax({
                 url: '<?= base_url('masterController/getData') ?>',
                 type: 'GET',
-                data: {keyword: keyword},
+                data: { keyword: keyword, orderBy: orderBy, orderDir: orderDir },
                 dataType: 'json',
-                success: function(data) {
+                success: function(response) {
                     var tableBody = $('#tableBody');
                     tableBody.empty(); // Clear the table body
 
-                    data.forEach(function(subscription, index) {
+                    response.forEach(function(subscription, index) {
                         var newRow = `
                             <tr id="row-${subscription.userid}">
                                 <td>${subscription.userid}</td>
@@ -174,7 +177,29 @@
         $('#registerUser').on('submit', function(e) {
             e.preventDefault();
             var formData = $(this).serialize();
-            var url = $('#form-id').val() ? '<?= base_url('masterController/updateUser') ?>' : '<?= base_url('masterController/addUser') ?>';
+            const mode = $(this).attr('data-mode');
+            const url = mode === 'edit' ? '<?= base_url('masterController/updateUser') ?>' : '<?= base_url('masterController/addUser') ?>';
+            
+            if (mode === 'edit') {
+                Swal.fire({
+                    title: "Are you sure to save the data?",
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: "Save",
+                    denyButtonText: `Don't save`
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        submitForm(url, formData);
+                    } else if (result.isDenied) {
+                        Swal.fire('Changes are not saved', '', 'info');
+                    }
+                });
+            } else {
+                submitForm(url, formData);
+            }
+        });
+
+        function submitForm(url, formData) {
             $.ajax({
                 url: url,
                 type: 'POST',
@@ -184,38 +209,15 @@
                     if (response.status === 'success') {
                         Swal.fire({
                             icon: 'success',
-                            title: 'User added/updated successfully',
+                            title: 'User saved successfully',
                             showConfirmButton: false,
                             timer: 1500
                         });
                         $('#modalUser').modal('hide'); // Hide the modal
                         $('#registerUser')[0].reset(); // Reset the form
 
-                        // Check if the user already exists in the table
-                        var existingRow = $(`#row-${response.data.userid}`);
-                        if (existingRow.length) {
-                            // Update the existing row
-                            existingRow.find('td:eq(1)').text(response.data.usernm);
-                            existingRow.find('td:eq(2)').text(response.data.createddate);
-                        } else {
-                            // Append the new user to the table
-                            var newRow = `
-                                <tr id="row-${response.data.userid}">
-                                    <td>${response.data.userid}</td>
-                                    <td>${response.data.usernm}</td>
-                                    <td>${response.data.createddate}</td>
-                                    <td>
-                                        <button class="btn btn-warning edit-btn" data-id="${response.data.userid}">
-                                            <i class="bx bx-edit"></i>
-                                        </button>
-                                        <button class="btn btn-danger delete-btn" data-id="${response.data.userid}">
-                                            <i class="bx bx-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            `;
-                            $('#tableBody').append(newRow);
-                        }
+                        // Reload the table data
+                        loadTable();
                     } else {
                         Swal.fire({
                             icon: 'error',
@@ -232,45 +234,54 @@
                     });
                 }
             });
-        });
+        }
 
         // Add event listener for delete buttons
         $(document).on('click', '.delete-btn', function(e) {
             e.preventDefault();
             const id = $(this).data('id');
-            if (confirm('Are you sure you want to delete this user?')) {
-                $.ajax({
-                    url: '<?= base_url('masterController/deleteUser') ?>',
-                    type: 'POST',
-                    data: { id: id },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'User deleted successfully',
-                                showConfirmButton: false,
-                                timer: 1500
-                            });
-                            // Remove the deleted user row from the table
-                            $(`button[data-id="${id}"]`).closest('tr').remove();
-                        } else {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "You won't be able to revert this!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, delete it!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '<?= base_url('masterController/deleteUser') ?>',
+                        type: 'POST',
+                        data: { id: id },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                Swal.fire({
+                                    title: "Deleted!",
+                                    text: "Your file has been deleted.",
+                                    icon: "success"
+                                });
+                                // Remove the deleted user row from the table
+                                $(`button[data-id="${id}"]`).closest('tr').remove();
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message
+                                });
+                            }
+                        },
+                        error: function(xhr, status, error) {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
-                                text: response.message
+                                text: 'An error occurred: ' + error
                             });
                         }
-                    },
-                    error: function(xhr, status, error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'An error occurred: ' + error
-                        });
-                    }
-                });
-            }
+                    });
+                }
+            });
         });
 
         // Add event listener for edit buttons
@@ -287,6 +298,8 @@
                         $('#form-id').val(response.data.userid);
                         $('#form-username').val(response.data.usernm);
                         $('#form-password').val(''); // Leave password field empty
+                        $('#formModalUser').text('Edit User'); // Set modal title to Edit User
+                        $('#registerUser').attr('data-mode', 'edit'); // Set form mode to edit
                         $('#modalUser').modal('show'); // Show the modal
                     } else {
                         Swal.fire({
@@ -306,10 +319,28 @@
             });
         });
 
-        // Add event listener for search form
-        $('input[name="keyword"]').on('input', function(){
+        // Add event listener for search input
+        $('input[name="keyword"]').on('input', function() {
             loadTable($(this).val());
         });
+
+        // Add event listener for logout button
+        $('#logoutButton').on('click', function(e) {
+            e.preventDefault();
+            Swal.fire({
+                title: "Are you sure to logout?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, logout"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#logoutForm').submit();
+                }
+            });
+        });
+
     });
 </script>
 

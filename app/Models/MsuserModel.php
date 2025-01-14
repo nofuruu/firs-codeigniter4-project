@@ -24,28 +24,44 @@ class MsuserModel extends Model
     }
 
     public function getUser($username, $password){
-        return $this->where('usernm', $username)->where
-        ('password', $password)->first();
+        return $this->where('usernm', $username)
+                    ->where('password', $password)
+                    ->first();
     }
 
     public function saveUser($data){
         return $this->insert($data);
     }
 
-    public function updateUser($data,){
-        return $this->update($data, );
+    public function updateUser($id, $updateData)
+    {
+        return $this->update($id, $updateData);
 
     }
 
     public function getData(){
-        return $this->orderBy('updateddate', 'desc')
+        return $this->orderBy('userid', 'ASC')
         ->findAll();
     }
 
-    public function getOneData($param = '', $field = 'usernm'){
+    public function getOneData($param = '', $field = 'usernm', $excludeID = null ){
         if ($param != '') {
             $this->where($field, $param);
         }
-        return $this->get();
+        if ($excludeID){
+            $this->where('userid !=', $excludeID);
+        }
+        return $this->get()->getRow();
+
     }
+
+    public function deleteUser($id)
+    {
+        return $this->where('userid', $id)->delete();
+    }
+
+
 }
+
+    
+

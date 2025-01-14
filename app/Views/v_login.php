@@ -144,6 +144,7 @@
     </form>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script>
         $(document).ready(function() {
@@ -156,13 +157,29 @@
                     dataType: 'json',
                     success: function(response) {
                         if (response.status === 'success') {
-                            window.location.href = response.redirect;
+                            Swal.fire({
+                                icon: 'success',
+                                tittle: 'Berhasil Login',
+                                text: 'Anda akan diarahkan ke halaman crudtest',
+                                showConfirmButton: false,
+                                timer: 1500
+                            }).then(() => {
+                                window.location.href = response.redirect;
+                            });
                         } else {
-                            $('#alert').text(response.message).show();
+                            Swal.fire({
+                                icon: 'error',
+                                tittle: 'Gagal',
+                                text: response.message
+                            });
                         }
                     },
                     error: function(xhr, status, error){
-                        $('')
+                        Swal.fire({
+                            icon: 'error',
+                            tittle: 'Error',
+                            text: 'An Error occurred : ' + error
+                        });
                     }
                 });
             });

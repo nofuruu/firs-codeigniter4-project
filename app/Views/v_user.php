@@ -207,10 +207,13 @@
                 </button>
                 </form>
             </div>
-            <a href="<?= base_url('userController/export') ?>" class="btn btn-success">
-            <i class='bx bx-download'></i>
-            <span class="fw-normal fs-7">Export to Excel</span>
-            </a>
+
+            <form id="exportForm" action="<?= base_url('userController/export') ?>" method="GET" style="display:inline;">
+                <button type="submit" class="btn btn-success" id="exportButton">
+                <i class='bx bx-download'></i>
+                <span class="fw-normal fs-7">Export to Excel</span>
+                </button>
+            </form>
         </div>
 
         <div class="mt-3">
@@ -246,6 +249,7 @@
 
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 
 <script>
@@ -337,10 +341,38 @@
         
         $('#logoutButton').on('click', function(e) {
                 e.preventDefault();
-                if (confirm('Are you sure you want to logout?')) {
-                    $('#logoutForm').submit();
+                Swal.fire({
+                    title: "Apakah anda yakin untuk logout?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#73EC8B",
+                    cancelButtonColor: "#d33",
+                    confirmButtonText: "Ya, Logout"
+                }).then((result) => {
+                    if(result.isConfirmed){
+                        $('#logoutForm').submit();
+                    }
+             });
+        });
+
+        $('exportButton').on('click', function(e){
+            e.preventDefault();
+            Swal.fire({
+                tittle: "Export ke excel?",
+                html: '<i class="bx bx-file"></i>',
+                iconHtml: '<i class="bx bx-file"></i>',
+                showCancelButton: true,
+                confirmButtonColor: "#73EC8B",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Ya, Export",
+                cancelButtonText: "Batal"
+            }).then((result)=> {
+                if(result.isConfirmed){
+                    $('#exportForm').submit();
                 }
             });
+        });
+    
 
 
         // Add event listener to search input
@@ -352,24 +384,46 @@
         $(document).on('click', '.delete-btn', function(e) {
             e.preventDefault();
             const id = $(this).data('id');
-            if (confirm('Are you sure you want to delete this data?')) {
+            Swal.fire({
+                tittle: "Are you sure?",
+                text: "Data yang dihapus tidak dapat dipulihkan",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Ya, Hapus"
+            }).then((result) => {
+                 if (result.isConfirmed) {
                 $.ajax({
                     url: '<?= base_url('userController/delete') ?>/' + id,
                     type: 'POST',
                     dataType: 'json',
                     success: function(response) {
                         if (response.success) {
-                            alert('Data berhasil dihapus!');
+                            Swal.fire({
+                                title: "Deleted!",
+                                text: "Data anda sukses dihapus",
+                                icon: "success"
+                            });
                             loadTable(); // Reload the table data
                         } else {
-                            alert('Gagal menghapus data: ' + response.message);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message
+                            });
                         }
                     },
                     error: function(xhr, status, error) {
-                        alert('Gagal menghapus data: ' + error);
+                        Swal.fire({
+                            icon: 'error',
+                            title:'Error',
+                            text: 'Terjadi error : ' + error
+                        });
                     }
                 });
             }
+        });
         });
     });
 

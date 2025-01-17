@@ -26,11 +26,11 @@ class Database extends Config
      */
     public array $default = [
         'DSN'          => '',
-        'hostname'     => 'localhost', // Atau IP server PostgreSQL Anda
-        'username'     => 'postgres', // Ganti sesuai username PostgreSQL Anda
-        'password'     => 'qwerty87', // Ganti dengan password yang benar
-        'database'     => 'myinternet_db', // Nama database
-        'DBDriver'     => 'Postgre', // Gunakan Postgre, bukan PostgreSQL
+        'hostname'     => '', // Atau IP server PostgreSQL Anda
+        'username'     => '', // Ganti sesuai username PostgreSQL Anda
+        'password'     => '', // Ganti dengan password yang benar
+        'database'     => '', // Nama database
+        'DBDriver'     => '', // Gunakan Postgre, bukan PostgreSQL
         'DBPrefix'     => '',
         'pConnect'     => false,
         'DBDebug'      => true,
